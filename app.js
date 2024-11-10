@@ -8,6 +8,7 @@ require("dotenv").config();
 require("./database/connection");
 
 const userRouter = require("./routes/user.route");
+const loanRouter = require("./routes/loan.route");
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use(express.json());
 
 //Routes
 app.use("/auth", userRouter);
+app.use("/borrower", loanRouter);
 
 if (process.env.NODE_ENV === "production") {
   app.use(express.static("client/build"));
