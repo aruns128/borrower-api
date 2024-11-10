@@ -7,6 +7,8 @@ const path = require("path");
 require("dotenv").config();
 require("./database/connection");
 
+const userRouter = require("./routes/user.route");
+
 const app = express();
 
 //Middleware
@@ -18,7 +20,7 @@ app.use(morgan("dev"));
 app.use(express.json());
 
 //Routes
-// app.use(userRouter);
+app.use("/auth", userRouter);
 
 if (process.env.NODE_ENV === "production") {
   app.use(express.static("client/build"));
