@@ -46,6 +46,7 @@ router.post("/signup", async (req, res) => {
 
 // Login route used to login existing users
 router.post("/login", async (req, res) => {
+  console.log("user login", req.body);
   try {
     const user = await User.findByCredentials({ ...req.body });
     const token = await user.generateAuthToken();
