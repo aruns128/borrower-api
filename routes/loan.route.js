@@ -20,7 +20,7 @@ router.post("/create-loan", auth, async (req, res) => {
     periodType,
     startDate,
     partialPayment,
-    paymentPeriodType,
+    interestPeriodType,
   } = req.body;
 
   // Input validation
@@ -59,7 +59,7 @@ router.post("/create-loan", auth, async (req, res) => {
       periodType,
       start,
       partialPayment,
-      paymentPeriodType
+      interestPeriodType
     );
 
     // Save the loan and calculation results to MongoDB
@@ -86,19 +86,18 @@ router.post("/create-loan", auth, async (req, res) => {
       interestForElapsedMonths: result.interestForElapsedMonths,
       totalAmountForElapsedMonths: result.totalAmountForElapsedMonths,
       partialPayment: partialPayment,
-      paymentPeriodType: paymentPeriodType,
+      interestPeriodType: interestPeriodType,
       remainingInterest: result.remainingInterest,
       owner: req.id, // Attach the authenticated user's ID to the loan
     });
 
-    // Save the loan document in the database
+    //Save the loan document in the database
     await newLoan.save();
-
     // Send the result as a response
     res.send({
       success: true,
       message: "Loan created and interest calculated successfully",
-      loan: newLoan,
+      loan: [],
     });
   } catch (error) {
     console.error(error);

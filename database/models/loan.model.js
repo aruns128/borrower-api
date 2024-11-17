@@ -24,7 +24,7 @@ const loanSchema = new mongoose.Schema({
   interestForElapsedMonths: { type: Number, required: true }, // Interest accrued for elapsed months
   totalAmountForElapsedMonths: { type: Number, required: true }, // Total amount for elapsed months
   partialPayment: { type: Number, default: 0 }, // Partial payment made by the borrower (e.g., paid interest for a year)
-  paymentPeriodType: { type: String, enum: ["month", "year"], required: true }, // Period type of the partial payment (month or year)
+  interestPeriodType: { type: String, enum: ["month", "year"], required: true }, // Period type of the partial payment (month or year)
   remainingInterest: { type: Number, required: true }, // Remaining interest after partial payment
   owner: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // Lender's ID (User model reference)
 });
