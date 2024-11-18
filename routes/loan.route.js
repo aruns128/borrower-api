@@ -226,4 +226,94 @@ router.put("/loans/:id", auth, async (req, res) => {
   }
 });
 
+// router.get("/dashboard", async (req, res) => {
+//   try {
+//     const data = await Loan.aggregate([
+//       {
+//         $group: {
+//           _id: "$lender.name", // Group by lender name
+//           totalPrincipal: { $sum: "$principal" }, // Sum up principal amounts
+//         },
+//       },
+//       {
+//         $project: {
+//           lenderName: "$_id", // Rename _id to lenderName
+//           totalPrincipal: 1,
+//           _id: 0,
+//         },
+//       },
+//     ]);
+
+//     res.status(200).json({ success: true, data });
+//   } catch (error) {
+//     console.error("Error fetching dashboard data:", error);
+//     res.status(500).json({ success: false, message: "Server Error" });
+//   }
+// });
+
+// // Route to get total principal by lender name (requires authentication)
+// router.get("/total-principal-by-lender", auth, async (req, res) => {
+//   try {
+//     // Aggregate the total principal amount by lender name
+//     const loan = await Loan.findOne({ _id: id, owner: req.id }); // Fetch loan by ID for the authenticated user
+
+//     console.log(req.id);
+
+//     res.send({
+//       success: true,
+//       message: "Total principal by lender fetched successfully",
+//       totalByLender,
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).send({
+//       success: false,
+//       message: "Error fetching total principal by lender",
+//     });
+//   }
+// });
+
+router.get("/dashboard", async (req, res) => {
+  try {
+    const data = await Loan.aggregate([
+      {
+        $group: {
+          _id: { lender: "$lender.name", borrower: "$borrower.name" },
+          totalPrincipal: { $sum: "$principal" },
+        },
+      },
+      {
+        $group: {
+          _id: "$_id.lender",
+          totalPrincipal: { $sum: "$totalPrincipal" },
+          borrowers: {
+            $push: {
+              borrowerName: "$_id.borrower",
+              totalPrincipalAmount: "$totalPrincipal",
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          lenderName: "$_id",
+          totalPrincipal: 1,
+          borrowers: {
+            $sortArray: {
+              input: "$borrowers",
+              sortBy: { totalPrincipalAmount: -1 }, // Sort by totalPrincipalAmount descending
+            },
+          },
+          _id: 0,
+        },
+      },
+    ]);
+
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    console.error("Error fetching dashboard data:", error);
+    res.status(500).json({ success: false, message: "Server Error" });
+  }
+});
+
 module.exports = router;
