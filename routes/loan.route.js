@@ -272,7 +272,6 @@ router.put("/loans/:id", auth, async (req, res) => {
 //     });
 //   }
 // });
-
 router.get("/dashboard", async (req, res) => {
   try {
     const data = await Loan.aggregate([
@@ -298,14 +297,47 @@ router.get("/dashboard", async (req, res) => {
         $project: {
           lenderName: "$_id",
           totalPrincipal: 1,
-          borrowers: {
-            $sortArray: {
-              input: "$borrowers",
-              sortBy: { totalPrincipalAmount: -1 }, // Sort by totalPrincipalAmount descending
-            },
-          },
+          borrowers: 1,
           _id: 0,
         },
+      },
+      {
+        $unwind: "$borrowers",
+      },
+      {
+        $lookup: {
+          from: "loans", // The collection name containing the loan details
+          localField: "borrowers.borrowerName",
+          foreignField: "borrower.name",
+          as: "borrowers.loans",
+        },
+      },
+      {
+        $group: {
+          _id: "$lenderName",
+          totalPrincipal: { $first: "$totalPrincipal" },
+          borrowers: { $push: "$borrowers" },
+        },
+      },
+      {
+        $project: {
+          lenderName: "$_id",
+          totalPrincipal: 1,
+          borrowers: {
+            $map: {
+              input: "$borrowers",
+              as: "borrower",
+              in: {
+                borrowerName: "$$borrower.borrowerName",
+                totalPrincipalAmount: "$$borrower.totalPrincipalAmount",
+                loans: "$$borrower.loans",
+              },
+            },
+          },
+        },
+      },
+      {
+        $sort: { "borrowers.totalPrincipalAmount": -1 }, // Sort borrowers by total principal amount
       },
     ]);
 
@@ -313,6 +345,39 @@ router.get("/dashboard", async (req, res) => {
   } catch (error) {
     console.error("Error fetching dashboard data:", error);
     res.status(500).json({ success: false, message: "Server Error" });
+  }
+});
+
+router.get("/loans", async (req, res) => {
+  const { lenderName } = req.query; // Extract lender name from query parameters
+
+  if (!lenderName) {
+    return res.status(400).json({
+      success: false,
+      message: "Lender name is required",
+    });
+  }
+
+  try {
+    const loans = await Loan.find({ "lender.name": lenderName });
+
+    if (loans.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: `No loans found for lender: ${lenderName}`,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: loans,
+    });
+  } catch (error) {
+    console.error("Error fetching loans:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error. Please try again later.",
+    });
   }
 });
 
