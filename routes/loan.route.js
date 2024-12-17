@@ -381,4 +381,116 @@ router.get("/loans", async (req, res) => {
   }
 });
 
+// Route to edit a specific loan by ID
+router.put("/loans/:id", auth, async (req, res) => {
+  const { id } = req.params;
+  const {
+    borrowerName,
+    borrowerPhoneNumber,
+    borrowerAlternativeNumber,
+    borrowerAddress,
+    principal,
+    ratePerUnit,
+    period,
+    periodType,
+    startDate,
+    partialPayment,
+    interestPeriodType,
+  } = req.body;
+
+  // Validate input
+  if (!borrowerName || !borrowerPhoneNumber || !principal || !ratePerUnit) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing required fields for loan update",
+    });
+  }
+
+  try {
+    const loan = await Loan.findOne({ _id: id, owner: req.id });
+    if (!loan) {
+      return res.status(404).json({
+        success: false,
+        message: "Loan not found or not authorized",
+      });
+    }
+
+    // Update loan fields
+    loan.borrower.name = borrowerName;
+    loan.borrower.phoneNumber = borrowerPhoneNumber;
+    loan.borrower.alternativeNumber = borrowerAlternativeNumber;
+    loan.borrower.address = borrowerAddress;
+    loan.principal = principal;
+    loan.ratePerUnit = ratePerUnit;
+    loan.period = period;
+    loan.periodType = periodType;
+    loan.startDate = new Date(startDate);
+    loan.partialPayment = partialPayment;
+    loan.interestPeriodType = interestPeriodType;
+
+    // Recalculate interest
+    const result = calculateInterest(
+      loan.principal,
+      loan.ratePerUnit,
+      loan.period,
+      loan.periodType,
+      loan.startDate,
+      loan.partialPayment,
+      loan.interestPeriodType
+    );
+
+    loan.interestPerMonth = result.interestPerMonth;
+    loan.totalInterest = result.totalInterest;
+    loan.totalAmount = result.totalAmount;
+    loan.interestForElapsedMonths = result.interestForElapsedMonths;
+    loan.totalAmountForElapsedMonths = result.totalAmountForElapsedMonths;
+    loan.remainingInterest = result.remainingInterest;
+
+    await loan.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Loan updated successfully",
+      loan,
+    });
+  } catch (error) {
+    console.error("Error updating loan:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating loan",
+    });
+  }
+});
+
+// Route to delete a specific loan by ID
+router.delete("/loans/:id", auth, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const loan = await Loan.findOneAndUpdate(
+      { _id: id, owner: req.id },
+      { isArchived: true, status: "returned" }, // Archive the loan by setting isArchived to true
+      { new: true } // Return the updated loan document
+    );
+
+    if (!loan) {
+      return res.status(404).json({
+        success: false,
+        message: "Loan not found or not authorized",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Loan archived successfully",
+    });
+  } catch (error) {
+    console.error("Error archiving loan:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error archiving loan",
+    });
+  }
+});
+
 module.exports = router;

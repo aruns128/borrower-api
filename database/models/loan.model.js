@@ -27,6 +27,12 @@ const loanSchema = new mongoose.Schema({
   interestPeriodType: { type: String, enum: ["month", "year"], required: true }, // Period type of the partial payment (month or year)
   remainingInterest: { type: Number, required: true }, // Remaining interest after partial payment
   owner: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // Lender's ID (User model reference)
+  status: {
+    type: String,
+    enum: ["active", "returned", "overdue"],
+    default: "active",
+  },
+  isArchived: { type: Boolean, default: false }, // Whether the loan is archived
 });
 
 // Create a model from the schema
