@@ -152,31 +152,6 @@ router.get("/loans/:id", auth, async (req, res) => {
   }
 });
 
-// Route to delete a specific loan by ID (requires authentication)
-router.delete("/loans/:id", auth, async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const loan = await Loan.findOneAndDelete({ _id: id, owner: req.id }); // Delete loan by ID for the authenticated user
-    if (!loan) {
-      return res.status(404).send({
-        success: false,
-        message: "Loan not found or not authorized",
-      });
-    }
-    res.send({
-      success: true,
-      message: "Loan deleted successfully",
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send({
-      success: false,
-      message: "Error deleting loan",
-    });
-  }
-});
-
 // Route to update a specific loan by ID (requires authentication)
 router.put("/loans/:id", auth, async (req, res) => {
   const { id } = req.params;
@@ -275,6 +250,11 @@ router.put("/loans/:id", auth, async (req, res) => {
 router.get("/dashboard", async (req, res) => {
   try {
     const data = await Loan.aggregate([
+      {
+        $match: {
+          isArchived: { $ne: true }, // Exclude documents where isArchived is true
+        },
+      },
       {
         $group: {
           _id: { lender: "$lender.name", borrower: "$borrower.name" },
